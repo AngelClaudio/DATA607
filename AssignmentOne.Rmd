@@ -2,7 +2,9 @@
 title: "Assignment One"
 author: "Angel Claudio"
 date: "2/1/2020"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ## Introduction
@@ -21,14 +23,18 @@ library(tidyverse)
 ```
 
 ## Data Wrangling
+I found the column names to be great, so no renaming of columns.
+
 ```{r import, message=F}
-data_hate_crimes <- read_csv("https://raw.githubusercontent.com/fivethirtyeight/data/master/hate-crimes/hate_crimes.csv") %>%
+data_hate_crimes <- read_csv(
+    "https://raw.githubusercontent.com/fivethirtyeight/data/master/hate-crimes/hate_crimes.csv"
+    ) %>%
     filter(!is.na(hate_crimes_per_100k_splc)) %>%
     filter(state != "District of Columbia")
 
 ```
 
-## Findings and Recommendations
+## Verification
 We can verify that as the household income rises, there is more hate crime as the disparity
 between economic classes becomes greater. We can also see as it gets higher the
 hate crime rate lowers again because the economic classes average are at the higher
@@ -36,7 +42,8 @@ end.
 
 ```{r plot, message=F}
 
-ggplot(data_hate_crimes, aes(median_household_income, hate_crimes_per_100k_splc)) + geom_smooth()
+ggplot(data_hate_crimes, aes(median_household_income, hate_crimes_per_100k_splc)) +
+    geom_smooth()
 
 ```
 
@@ -44,9 +51,12 @@ I wanted to extend the study to look at political party affiliation as well.
 I noticed as the vote turn out for Trump lowers, implying a non-conservative state,
 the hate crimes were higher.
 ```{r plot-two, message=F}
-ggplot(data_hate_crimes, aes(share_voters_voted_trump, hate_crimes_per_100k_splc)) + geom_smooth()
+ggplot(data_hate_crimes, aes(share_voters_voted_trump, hate_crimes_per_100k_splc)) +
+    geom_smooth()
 ```
 
+
+## Further Findings
 So I went ahead and got a secondary data source to get polital party affiliation
 based on 2010 elections to extrapolate party concentration around
 hate crimes. The results further substantiated my hypothesis:
@@ -56,11 +66,16 @@ data_red_blue <- read_csv("https://electoral-vote.com/evp2010/Info/red-blue.csv"
     rename(state = State)
 
 data_red_blue <- left_join(data_hate_crimes, data_red_blue, by ="state") %>%
-    select(state, party, hate_crimes_per_100k_splc, median_household_income, share_voters_voted_trump, share_population_in_metro_areas)
+    select(state, party, hate_crimes_per_100k_splc, median_household_income, 
+           share_voters_voted_trump, share_population_in_metro_areas)
 
-ggplot(data_red_blue, aes(share_voters_voted_trump, hate_crimes_per_100k_splc)) + geom_smooth() + geom_point(aes(color = party)) +     scale_color_manual(values=c("blue","red"))
+ggplot(data_red_blue, aes(share_voters_voted_trump, hate_crimes_per_100k_splc)) +
+    geom_smooth() + geom_point(aes(color = party)) +
+    scale_color_manual(values=c("blue","red"))
 
-ggplot(data_red_blue, aes(median_household_income, hate_crimes_per_100k_splc)) + geom_smooth() + geom_point(aes(color = party)) +     scale_color_manual(values=c("blue","red"))
+ggplot(data_red_blue, aes(median_household_income, hate_crimes_per_100k_splc)) +
+    geom_smooth() + geom_point(aes(color = party)) +
+    scale_color_manual(values=c("blue","red"))
 ```
 
 
