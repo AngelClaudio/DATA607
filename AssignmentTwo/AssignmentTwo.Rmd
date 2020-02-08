@@ -1,0 +1,35 @@
+---
+title: "AssignmentTwo"
+author: "Angel Claudio"
+date: "2/7/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+
+
+```{r cars}
+library(RODBC)
+
+db_context <- odbcDriverConnect(connection="Driver={SQL Server Native Client 11.0};server=localhost;database=RottenApples;trusted_connection=yes;")
+
+res <- sqlQuery(db_context, 'select * from ParticipantRating')
+
+View(res)
+
+#print(res)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+
+```
+
