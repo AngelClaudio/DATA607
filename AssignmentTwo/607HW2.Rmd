@@ -1,0 +1,140 @@
+---
+title: "DATA 607 Assignment 2 - Movie Ratings DB"
+author: "Layla Quinones"
+date: "2/7/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(RODBC)
+library(dplyr)
+
+```
+
+## Establish a connection with SQL Server
+
+```{r results = FALSE}
+db_context <- odbcDriverConnect(connection="Driver={SQL Server Native Client 11.0};server=localhost;database=RottenApples;trusted_connection=yes;")
+
+#Set permission to insert data
+# sqlQuery(db_context, 'SET IDENTITY_INSERT Participant ON')
+# sqlQuery(db_context, 'SET IDENTITY_INSERT ParticipantRating ON')
+# sqlQuery(db_context, 'SET IDENTITY_INSERT Rating ON')
+# sqlQuery(db_context, 'SET IDENTITY_INSERT Movie ON')
+```
+
+Here I am setting up the connection with the SQL Server on my computer and giving myself access to insert data into and change tables. 
+
+## Insert Data into Tables
+```{r sql-insert-commands, eval = F}
+#Insert data, run and comment out (cannot duplicate data)sqlQuery(db_context, 'INSERT INTO Participant VALUES(\'Layla\', \'Quinones\'), (\'Daniel\', \'Rivera\'),  (\'London\', \'Ferrer\'), (\'Rose\', \'Burnell\');')
+#sqlQuery(db_context, 'INSERT INTO Participant VALUES (\'John\', \'Smith\'), (\'Jane\', \'Smith\'), (\'Angie\', \'Abreu\'), (\'Amy\', \'Thompson\'), (\'Denys\', \'Michell\');')
+
+#sqlQuery(db_context, 'INSERT INTO ParticipantRating VALUES (2,5,1 ), (3,4,1 ), (4,5,1), (5, 5, 1),(2,5,2 ), (3,4,2 ), (4,4,2), (5, 5, 2), (2,NULL,3 ), (3,4,3 ), (4,5,3), (5, 5, 3), (2,4,4 ), (3,4,4 ), (4,4,4), (5, 3, 4), (2,2,5), (3,3,5), (4,2,5), (5, 2, 5), (2,2,6 ), (3,3,6 ), (4,3,6), (5, 2, 6) ;')
+
+#sqlQuery(db_context, 'INSERT INTO ParticipantRating VALUES (6,5,1 ), (7,4,1 ), (8,5,1), (9, 5, 1), (10, 5, 1), (6,5,2 ), (7,4,2 ), (8,4,2), (9, 5, 2), (10, 5, 2), (6,NULL,3 ), (7,4,3 ), (8,5,3), (9, 5, 3), (10, 5, 3), (6,4,4 ), (7,4,4 ), (8,4,4), (9, 3, 4), (10, 3, 4), (6,2,5), (7,3,5), (8,2,5), (9, 2, 5), (10, 2, 5), (6,2,6 ), (7,3,6 ), (8,3,6), (9, 2, 6), (10, 2, 6);')
+```
+
+Here I placed each table in a variable and saved them as dataframes so that I can manipulate and access data easily in R. I also insert data from my movie survey into the Participant and ParticipantRating data tables. Inserting data command were commented out because once you run the program once the data is in the tables. No need to add them in again.
+
+## Database Overview
+
+> Ten Random people were asked to rate 6 movies from 1 - 5. In the `Participant` table we have a list of all our 5 participants, the `Movie` table we has a list of the 6 movies and their corresponding Rating and Audience Rating as listed on [Rotten Tomatoes](https://www.rottentomatoes.com/), the `Rating` table contains information about each rating and the `ParticipantRating` table has data on the rating each participant from our survey gave to each movie. It is important to note that Rotten Tomatoes Ratings are completed by people that Rotten Tomatoes designates, and Audience Scores can be contributed by anyone in the general public.
+
+```{r, out.width = "400px", fig.align = 'center'}
+#knitr::include_graphics("DB.jpg")
+```
+
+
+```{r set-demo-variables}
+(sqlQuery(db_context, 'select * from Participant'))
+(sqlQuery(db_context, 'select * from Rating'))
+(movie <- sqlQuery(db_context, 'select * from Movie'))
+(sqlQuery(db_context, 'SELECT TOP 10 * FROM ParticipantRating'))
+```
+
+## Joining `ParticipantRating` and `Movie`
+
+> We are interested in looking at the ratings our participants gave each movie along with the ratings from Rotten Tomatoes so we'll need to join certain columns from both into one table. The columns omitted are `ID` and `ReleaseDate` from the `Movie` table. Resultant table is arranged and displayed below.
+
+```{r sql-query}
+ratingData <- sqlQuery(db_context, 'SELECT P.*,M.Title, M.RottenTomatoesAudienceScore, M.RottenTomatoesRating FROM ParticipantRating [P]  JOIN Movie [M] ON P.MovieID = M.ID ORDER BY M.Title;')
+
+## IF NOT HANDLED IN SQL QUERY ABOVE THE FOLLOWING COULD HAVE DONE BELOW AS A MIX BETWEEN SQL AND R
+
+#ratingData <- sqlQuery(db_context, 'SELECT * FROM ParticipantRating LEFT JOIN Movie ON ParticipantRating.MovieID = Movie.ID;')
+
+#Drop the title and release date column
+#ratingData$ID <- NULL
+
+#Drop the title and release date column
+#ratingData$ReleaseDate <- NULL
+
+#Arrange the data by Movie
+#arrange(ratingData,MovieID)
+
+head(ratingData)
+```
+
+## Summary Statistics from Participant Ratings
+In order to get a summary of the participant data first I subset each movie rating data (grouped by movie) and extract the median score from the `summary` function. Then I create a boxplot of each movie on the same axis and I plot median ratings from each movie in box plots
+
+```{r, out.width = "400px", fig.align = 'center'}
+movieOne <- subset(ratingData, MovieID == 1)
+movieTwo <- subset(ratingData, MovieID == 2)
+movieThree <- subset(ratingData, MovieID == 3)
+movieFour <- subset(ratingData, MovieID == 4)
+movieFive <- subset(ratingData, MovieID == 5)
+movieSix <- subset(ratingData, MovieID == 6)
+
+medianOne <- summary(movieOne$RatingID)[[3]]
+medianTwo <- summary(movieTwo$RatingID)[[3]]
+medianThree <- summary(movieThree$RatingID)[[3]]
+medianFour <- summary(movieFour$RatingID)[[3]]
+medianFive <- summary(movieFive$RatingID)[[3]]
+medianSix <- summary(movieSix$RatingID)[[3]]
+
+#Put medians in a vector for barchart
+medianRat <- c(medianOne, medianTwo, medianThree, medianFour, medianFive, medianSix)
+medianRat
+boxplot(ratingData$RatingID ~ ratingData$MovieID, main = "Participant Ratings", xlab = "Movie ID", ylab = "Rating")
+
+barplot(medianRat ~ c(1, 2, 3, 4, 5, 6), beside=TRUE,col = "purple", main = "Median Participant Ratings", xlab = "Movie ID", ylab = "Median Rating")
+```
+
+From the boxplot, bar plot and summary statistics of participant ratings for each movie we see that movie 1 and 3 have the highest median rating of `r medianOne` and `r medianTwo` respectively whereas movie 5 had the lowest median rating of `r medianFive`.
+
+## Rotten Tomatoes data
+
+To get a good look at the Rotten Tomatoes data and how the different sources of ratings compare to eachother, I first had to stack the data from the `RottenTomatoesRating` and `RottenTomatoesAudienceScore` columns using the `rbind` function. I plotted each column seperatly then together to compare.
+```{r, out.width = "400px", fig.align = 'center'}
+test <- rbind(movie$RottenTomatoesRating,movie$RottenTomatoesAudienceScore)
+
+barplot(movie$RottenTomatoesRating ~ movie$ID, col = "green", main = "Rotten Tomatoes Ratings", xlab = "Movie ID", ylab = "Rating")
+barplot(movie$RottenTomatoesAudienceScore ~ movie$ID, col = "red", main = "Rotten Tomatoes Audience Ratings", xlab = "Movie ID", ylab = "Rating")
+
+barplot(test, beside=T, col = c("green", "red"), main = "Rotten Tomatoes Ratings VS Audience Ratings", xlab = "Movie ID", ylab = "Rating", ylim = c(0, 1))
+
+legend("topright", c("RT", "Audience"), fill = c("green", "red"))
+```
+
+From the barplots above we can see that the Rotten Tomatoes Rating **(RT)** differs from the Audience Rating **(Audience)** for all movies. Specifically, there is a larger difference between the Rotten Tomatoes and Audience Ratings for Movies 5 and 6, `r movie$Title[5]` and `r movie$Title[6]` respectivley. These two movies also happen to be the movies with the lowest audience ratings. 
+
+## Rotten Tomatoes and Participant Data
+
+```{r,  fig.align = 'center'}
+#Map RT DATA
+mapRT <- movie$RottenTomatoesRating*5
+mapRTA <- movie$RottenTomatoesAudienceScore*5
+
+test2 <- rbind(movie$RottenTomatoesRating*5,movie$RottenTomatoesAudienceScore*5, medianRat )
+
+barplot(test2, beside=T, col = c("green", "red", "purple"), main = "Scaled RT Ratings, Scaled Audience Ratings & Participant Ratings ", xlab = "Movie ID", ylab = "Rating", ylim = c(0, 6))
+
+legend("topright", c("RT", "Audience", "PR"), fill = c("green", "red", "purple"))
+```
+
+The Rotten Tomatoes data was scaled to the same rating scale of our survey ( 1 - 5) by multiplying each rating (a proportion) by 5. From looking at the median participant ratings **(PR)** side by side with the scaled data from Rotten Tomatoes **RT** and **Audience**, we see that the Participant Ratings from our survey **(PR)** best matches the Audience Ratings from Rotten Tomatoes. The first 3 movies on our list, `r movie$Title[1]`, `r movie$Title[2]` and `r movie$Title[3]`have the highest ratings and the least differences between rating sources. There is a larger difference between the Rotten Tomatoes and Audience Ratings for Movies 5 and 6, `r movie$Title[5]` and `r movie$Title[6]` respectivley. This suggests that the general audience data and our participant data are similar whereas, the ratings completed by Rotten Tomatoes "certified" viewers show greater differences. 
+
+>**CONCLUSION:** According to this survey and brief data analysis, the most reliable marker for recommending a movie to a person from the general public is the **Audience** rating on Rotten Tomatoes. 
