@@ -1,6 +1,6 @@
 ---
 title: "DATA 607 Assignment 2 - Movie Ratings DB"
-author: "Layla Quinones"
+author: "Angel Claudio & Layla Quinones"
 date: "2/7/2020"
 output: html_document
 ---
@@ -16,12 +16,6 @@ library(dplyr)
 
 ```{r results = FALSE}
 db_context <- odbcDriverConnect(connection="Driver={SQL Server Native Client 11.0};server=localhost;database=RottenApples;trusted_connection=yes;")
-
-#Set permission to insert data
-# sqlQuery(db_context, 'SET IDENTITY_INSERT Participant ON')
-# sqlQuery(db_context, 'SET IDENTITY_INSERT ParticipantRating ON')
-# sqlQuery(db_context, 'SET IDENTITY_INSERT Rating ON')
-# sqlQuery(db_context, 'SET IDENTITY_INSERT Movie ON')
 ```
 
 Here I am setting up the connection with the SQL Server on my computer and giving myself access to insert data into and change tables. 
@@ -41,10 +35,6 @@ Here I placed each table in a variable and saved them as dataframes so that I ca
 ## Database Overview
 
 > Ten Random people were asked to rate 6 movies from 1 - 5. In the `Participant` table we have a list of all our 5 participants, the `Movie` table we has a list of the 6 movies and their corresponding Rating and Audience Rating as listed on [Rotten Tomatoes](https://www.rottentomatoes.com/), the `Rating` table contains information about each rating and the `ParticipantRating` table has data on the rating each participant from our survey gave to each movie. It is important to note that Rotten Tomatoes Ratings are completed by people that Rotten Tomatoes designates, and Audience Scores can be contributed by anyone in the general public.
-
-```{r, out.width = "400px", fig.align = 'center'}
-#knitr::include_graphics("DB.jpg")
-```
 
 
 ```{r set-demo-variables}
