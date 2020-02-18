@@ -1,0 +1,33 @@
+---
+title: "Chess Tournament ETL"
+author: "Angel Claudio"
+output: html_notebook
+---
+
+
+```{r setup}
+library(tidyverse)
+```
+
+```{r extract}
+#Extract Pertinent Data 
+chess_tournament <- read_csv("https://raw.githubusercontent.com/AngelClaudio/DataSources/master/tournamentinfo.txt",
+                             col_name = ("raw"), skip = 4) %>% 
+                                filter(row_number() %% 3 != 0) 
+```
+
+```{r extract-to-vectors}
+#Data munging
+#chess_tournament %>% mutate(PlayerNumber = str_extract(raw, "^\\d+"))
+PlayerNumbers = str_extract(chess_tournament$raw,"^\\d+")
+PlayerNumbers = PlayerNumbers[!is.na(PlayerNumbers)]
+
+#Get next raw bit of data (1st remove extracted data)
+chess_tournament <- str_replace(chess_tournament$raw,"^\\d+\\s\\|\\s","")
+
+```
+
+```{r}
+
+```
+
