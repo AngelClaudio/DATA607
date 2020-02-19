@@ -1,38 +1,88 @@
 ---
 title: "Chess Tournament ETL"
 author: "Angel Claudio"
-output: html_notebook
-editor_options: 
+output:
+  html_document:
+    df_print: paged
+editor_options:
   chunk_output_type: inline
 ---
 
-
-```{r setup}
+```{r setup, message=F}
 library(tidyverse)
 ```
 
-```{r extract}
-#Extract Pertinent Data 
-chess_tournament <- read_csv("https://raw.githubusercontent.com/AngelClaudio/DataSources/master/tournamentinfo.txt",
-                             col_name = ("raw"), skip = 4) %>% 
-                                filter(row_number() %% 3 != 0) 
+**First step is to extract the data.**
 
+1. Skip first 4 rows (not using them)
+2. Give a column name to call on and reject headers
+3. Remove all rows using "----.." by leveraging modulus
+
+```{r extract, message=F}
+chess_tournament <- read_csv(
+    "https://raw.githubusercontent.com/AngelClaudio/DataSources/master/tournamentinfo.txt",
+        col_name = ("raw"), skip = 4) %>% 
+         filter(row_number() %% 3 != 0
+    )
 ```
+
+**Second step is from the raw data, extract to vectors using regex patterns. There will be a split of two sets of data, the top rows of the players, and the bottom row of the players so they match with the ordinality of the IDs.**
+
+1. Start with vector for Player IDs to use for reference later.
+2. Create a vector for Player Names
+3. Create a vector for States
+4. Create a vector for Points
+5. Create a vector for Pre-rating
+6. Merge the vectors into a data frame
 
 ```{r extract-to-vectors}
-#Data munging
-#chess_tournament %>% mutate(PlayerNumber = str_extract(raw, "^\\d+"))
-PlayerNumbers = str_extract(chess_tournament$raw,"^\\d+")
-PlayerNumbers = PlayerNumbers[!is.na(PlayerNumbers)]
+player_id = str_extract(chess_tournament$raw,"^\\d+")
+player_id = player_id[!is.na(player_id)]
 
-#Get next raw bit of data (1st remove extracted data)
-chess_tournament <- str_replace(chess_tournament$raw,"^\\d+\\s\\|\\s","")
+#Update Raw data, removing IDs to make proceeding regex needs simpler
+chess_tournament <- data.frame(str_replace(chess_tournament$raw,"^\\d+\\s\\|\\s",""))
 
-#player_names = 
+player_name_rows <- chess_tournament %>% filter(row_number() %% 2 != 0) 
+names(player_name_rows)[1] <- "col1"
+player_name = trimws(str_extract(player_name_rows$col1, "^\\D+ [^\\|]"))
 
+state_rows <- chess_tournament %>% filter(row_number() %% 2 == 0) 
+names(state_rows)[1] <- "col1"
+state_name = str_extract(state_rows$col1, "[[:alpha:]]{2}")
+
+points = str_extract(player_name_rows$col1, "\\d.\\d")
+pre_rating = as.integer(str_replace_all(str_extract(state_rows$col1, ": \\s?\\d{3,4}"), ":\\s",""))
+
+(chess_tournament <- data.frame(player_id, player_name, state_name, points, pre_rating))
 ```
 
-```{r}
 
+**Third step is to get average of all the player's opponents into a variable**
+
+1. Create a vector of all the opponent IDs per player
+2. Instantiate a vector that will be used to populate the averages
+3. Using a for loop, iterate through all the sets of opponent ids
+4. Using the reference IDs of the main set, pull their ratings to use for a mean
+4. Take the now populated vector from step 2 and merge with previously created data frame
+
+```{r mean-ratings, warning=F}
+players_opponent_ids = str_extract_all(player_name_rows$col1, "[[:upper:]]\\s+\\d+\\|")
+players_opponent_ids = str_extract_all(players_opponent_ids, "\\d+")
+
+average_opponent_rating <- vector()
+
+for (ids in players_opponent_ids) {
+    opponent_ratings <- filter(chess_tournament, player_id %in% ids)
+    average_opponent_rating <- c(average_opponent_rating,  mean(opponent_ratings$pre_rating))
+}
+
+chess_tournament$average_opponent_rating <- average_opponent_rating
+chess_tournament
+```
+
+**Fourth Step is to load the new data by writing a CSV (commented out since no visualization)**
+```{r}
+#Write to CSV file
+#write.csv(chess_tournament,"chess_tournament.csv")
 ```
 
