@@ -3,7 +3,10 @@ title: "Chess Tournament ETL"
 author: "Angel Claudio"
 output:
   html_document:
-    df_print: paged
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    number_sections: true
   pdf_document: default
 editor_options:
   chunk_output_type: inline
@@ -14,7 +17,7 @@ library(tidyverse)
 library(DT)
 ```
 
-**First step is to extract the data.**
+# Extract Data
 
 1. Skip first 4 rows (not using them)
 2. Give a column name to call on and reject headers
@@ -28,6 +31,7 @@ chess_tournament <- read_csv(
     )
 ```
 
+# Transformation\Tidy
 **Second step is from the raw data, extract to vectors using regex patterns. There will be a split of two sets of data, the top rows of the players, and the bottom row of the players so they match with the ordinality of the IDs.**
 
 1. Start with vector for Player IDs to use for reference later.
@@ -63,7 +67,7 @@ datatable(chess_tournament[2:5], extensions = c('FixedColumns',"FixedHeader"),
                          fixedHeader=TRUE))
 ```
 
-
+# Transformation & Tidy Part 2
 **Third step is to get average of all the player's opponents into a variable**
 
 1. Create a vector of all the opponent IDs per player
@@ -84,15 +88,16 @@ for (ids in players_opponent_ids) {
 }
 
 chess_tournament$average_opponent_rating <- average_opponent_rating
+```
 
+# Final Output & Load 
+**Display final output and fourth step to load the new data by writing a CSV (load commented out at end since not in use for this demo)**
+```{r}
 datatable(chess_tournament[2:6], extensions = c('FixedColumns',"FixedHeader"),
           options = list(scrollX = TRUE, 
                          paging=TRUE,
                          fixedHeader=TRUE))
-```
 
-**Fourth Step is to load the new data by writing a CSV (commented out since no visualization)**
-```{r}
 #Write to CSV file
 #write.csv(chess_tournament,"chess_tournament.csv")
 ```
