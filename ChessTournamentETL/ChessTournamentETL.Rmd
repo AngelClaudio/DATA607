@@ -4,12 +4,14 @@ author: "Angel Claudio"
 output:
   html_document:
     df_print: paged
+  pdf_document: default
 editor_options:
   chunk_output_type: inline
 ---
 
 ```{r setup, message=F}
 library(tidyverse)
+library(DT)
 ```
 
 **First step is to extract the data.**
@@ -53,7 +55,12 @@ state_name = str_extract(state_rows$col1, "[[:alpha:]]{2}")
 points = str_extract(player_name_rows$col1, "\\d.\\d")
 pre_rating = as.integer(str_replace_all(str_extract(state_rows$col1, ": \\s?\\d{3,4}"), ":\\s",""))
 
-(chess_tournament <- data.frame(player_id, player_name, state_name, points, pre_rating))
+chess_tournament <- data.frame(player_id, player_name, state_name, points, pre_rating)
+
+datatable(chess_tournament[2:5], extensions = c('FixedColumns',"FixedHeader"),
+          options = list(scrollX = TRUE, 
+                         paging=TRUE,
+                         fixedHeader=TRUE))
 ```
 
 
@@ -77,7 +84,11 @@ for (ids in players_opponent_ids) {
 }
 
 chess_tournament$average_opponent_rating <- average_opponent_rating
-chess_tournament
+
+datatable(chess_tournament[2:6], extensions = c('FixedColumns',"FixedHeader"),
+          options = list(scrollX = TRUE, 
+                         paging=TRUE,
+                         fixedHeader=TRUE))
 ```
 
 **Fourth Step is to load the new data by writing a CSV (commented out since no visualization)**
