@@ -41,6 +41,10 @@ datatable(flights %<>% fill(Airline) %>%drop_na() %>% gather("Port", "Total_Flig
 
 **Get average of flights delayed for each airline.**
 
+1. Group by Airline & Status
+2. Get the sum of total flights for each
+3. Using the sum of the total flights derived, divided by the sum of the totals for each group (airlines)
+
 ```{r RnA}
     datatable(group_by(flights, Airline, Status) %>% summarise(Total = sum(Total_Flights)) %>%
                 mutate(Percent = round(Total/sum(Total),2)),)
@@ -56,14 +60,13 @@ datatable(flights %<>% fill(Airline) %>%drop_na() %>% gather("Port", "Total_Flig
 
 ```{r}
 ggplot(filter(flights, Airline=="ALASKA")) + 
-    geom_bar(aes(x = Port, y = Total_Flights, fill = Status),
-             stat = 'identity') +
-    ggtitle("ALASKA Airlines On Times vs Delays ")
+    geom_bar(aes(reorder(x = Port, -Total_Flights), y = Total_Flights, fill = Status),
+             stat = 'identity') + ylim(0,5000) +
+    ggtitle("ALASKA Airlines On Times vs Delays ") + xlab("Ports")
 
 ggplot(filter(flights, Airline=="AM WEST")) + 
-    geom_bar(aes(x = Port, y = Total_Flights, fill = Status),
-             stat = 'identity') +
-    ggtitle("AM WEST Airlines On Times vs Delays")
+    geom_bar(aes(reorder(x = Port, -Total_Flights), y = Total_Flights, fill = Status),
+             stat = 'identity') + ggtitle("AM WEST Airlines On Times vs Delays") + xlab("Ports")
 ```
 
 
