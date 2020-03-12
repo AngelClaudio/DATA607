@@ -77,7 +77,7 @@ Note that from the extraction step, instead of using **stringsAsFactor=F** argum
 ```{r comparison_dataframes}
 (all_equal(df_html_source, df_json_source))
 (all_equal(df_html_source, df_xml_source))
-
+(all_equal(df_json_source, df_xml_source))
 #all_equal(df_html_source, df_xml_source, convert=T) #OPTIONAL APPROACH
 ```
 
