@@ -1,0 +1,119 @@
+---
+title: "Tidyr unite and pivot_wider Functions"
+author: "Angel Claudio"
+
+output: rmdformats::readthedown
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(DT)
+```
+
+# I. Overlooked Tidyr Functions
+
+## Purpose
+
+I would like to demonstrate two overlooked functions of tidyr, **unite** and **pivot_wider**.
+
+The solutions may not be the best fit for the question that will be proposed, but the main idea is to give you more ideas on how to model your data.
+
+## The Data
+
+We will be using a Netflix dataset found from Kaggle located at https://www.kaggle.com/shivamb/netflix-shows#netflix_titles.csv.
+
+```{r import, message=F, warning=F, echo =F}
+netflix_raw <- readr::read_csv("https://raw.githubusercontent.com/AngelClaudio/DataSources/master/netflix_titles.csv")
+```
+
+
+```{r before-display, echo=F}
+netflix_before <- select(netflix_raw, title, type, rating)
+
+datatable(netflix_before, options = list(pageLength = 4))
+```
+
+# II. Question and Answer
+
+## Question
+
+Let's say I'd like to use this data to find appropriate movies for my wife and daughter to watch with me, what are ways this data could be presented to make finding these type of movies easier?
+
+## Answer Using "unite"
+
+![](https://raw.githubusercontent.com/AngelClaudio/DataSources/master/unite.JPG)
+
+**unite** is a great function that gives you the ability to bring together several columns into one. 
+
+The function name "unite" is also very intuitive and greatly increases the readability of your code.
+
+![](https://raw.githubusercontent.com/AngelClaudio/DataSources/master/united_function.png)
+
+1. The first step is to use the **col** argument to give a new name to the column you will create.
+2. Next, use the **...** argument which represents all the columns that will be united, comma separated.
+3. Finally, the **sep** argument is used to add a text separator between the values you will unite. 
+
+Now we will **unite** the _type_ and _rating_ column into one.
+
+Below is an example using the function:
+
+<!-- 1. We set the **col** argument to name the new column -->
+<!-- 2. We then listed all the column names (type, rating) that will be united separated by commas -->
+<!-- 3. Finally, we set the **sep** argument to the value (", Rated ") used for concantenating the column values -->
+
+```{r unite}
+netflix <- unite(data = netflix_before,
+                  col = "Type",        #Name of new column      
+                  type, rating,        #Columns being united
+                  sep = ", Rated ")    #Text to put in between columns
+
+datatable(netflix)
+```
+
+
+## Alternative Answer Using "pivot_wider"
+
+This tidyr function is notoriously confusing but I wanted to include this in hopes of dispelling it's bad rep!
+
+First let's look at the signature:
+<center>![](https://raw.githubusercontent.com/AngelClaudio/DataSources/master/pivot_wider.png)</center>
+
+For pivot_wider you want to look carefully at an observation and think, **"what two values can I turn into a column - value pair?**
+
+1. _names_from_ will be your column values
+2. _values_from_ will continue to be your values, but spread into columns assigned from #1
+
+In the picture below you can see we are taking _rating_ as the **names_from** value, to turn it into columns.
+
+Next, we take the _listed_in_ column as the **values_from** value, which will will be mapped as the values to the columns we created.
+
+<center>![](https://raw.githubusercontent.com/AngelClaudio/DataSources/master/pivot_wider_bandafter.png)</center>
+
+### Before pivot_wider
+
+Here is what the data looks like before applying **pivot_wider**
+
+```{r after-display, echo = F, include = T}
+after <- select(netflix_raw, title, listed_in, rating) %>%
+    filter(rating == "G" | rating == "TV-G")
+
+datatable(after, options = list(pageLength = 4))
+```
+
+### Applying pivot_wider
+
+We will take the "rating" columns and pass it to the **names_from** argument to turn it into columns. Then we will take the "listed_in" column and pass it to the **values_from** argument so that the values will be mapped to the new columns generated from "rating"
+
+
+
+```{r}
+datatable(pivot_wider(after, 
+                      names_from = rating,       #COLUMNS (KEY)
+                      values_from = listed_in),  #VALUES (Will map to KEY)
+          options = list(pageLength = 4))
+```
+
+# III. Conclusion
+
+As you can see, there are many way to tackle problems in R using Tidyverse. For example, instead of using **select** or **mutate**, one may consider **unite** as a better way to go to for brevity and readabililty. As your coding skills mature, so will your taste for refinement of solutions - the goal is not so much the solution anymore, but how _best_ you can deliver the solution with optimal results and maintainability (sometimes referred to as elegance).
