@@ -1,0 +1,135 @@
+---
+author: "Angel Claudio"
+title: "Sentiment Analysis"
+output: rmdformats::material
+css: custom.css
+---
+
+# Introduction 
+
+We will be using the work from chapter 2 of:
+
+* **Text Mining with R**  _by Julia Silge & David Robinson_.
+
+![](https://www.tidytextmining.com/images/cover.png){ width=40% }
+
+The task is to:
+
+1. Recreate a primary example of chapter 2, we will look at word cloud comparison.
+
+2. Extend the code in two ways
+    * Find a different corpus
+    * Incorporate at least one additional sentiment lexicon (possibly from another R package through research)
+
+# Recreate Chapter 2 Example {.tabset}
+
+## Library Setup
+
+1. **DT** is merely for presentation purposes
+2. **janeaustenr** is to use the example data
+3. **reshape2** for turning a data frame into a matrix
+4. **tidyverse** mostly for data munging tasks
+5. **tidytext** for leveraging unnest functionality
+6. **wordcloud** is for creating the word cloud visualizations
+
+
+```{r r-setup, message=F}
+library(DT)
+library(janeaustenr)
+library(reshape2)
+library(tidyverse)
+library(tidytext)
+library(wordcloud)
+```
+
+## Data Munging
+
+1. Take the austen books data-set, and start by grouping by books
+2. Add columns line number and chapter
+3. Ungroup and use the **unnest_tokens** function to get all the unigrams
+
+```{r r-example}
+tidy_books <- austen_books() %>% group_by(book) %>%
+    mutate(linenumber = row_number(),
+           chapter = cumsum(str_detect(text, 
+                                       regex("^chapter [\\divxlc]",
+                                       ignore_case = T)))) %>%
+    ungroup() %>% unnest_tokens(word, text)
+
+datatable(filter(tidy_books, book == "Pride & Prejudice" & chapter == 5))
+```
+
+## Word Cloud Data Analysis
+
+We can see here that the size of the word is indicative of it's frequency in comparison to others within it's sentiment.
+
+```{r r-analysis, message= F}
+tidy_books %>% inner_join(get_sentiments("bing")) %>%
+            count(word, sentiment, sort = T) %>%
+            acast(word ~ sentiment, value.var = "n", fill = 0) %>%
+            comparison.cloud(colors = c("gray20", "gray80"), max.words = 100)
+```
+
+
+# Using a different Corpus
+
+1. load the library for the **gutenbergr** project
+2. leverage function **gutenber_download** by passing the ID of the book (IDs can be discerned from **gutenberg_works** function)
+3. tidy up the data, and get ready to dive into **_Alice in Wonderland_**
+
+```{r message = F}
+library(gutenbergr)
+
+alice_in_wonderland <- gutenberg_download(11) %>% mutate(linenumber = row_number(),
+           chapter = cumsum(str_detect(text, 
+                                       regex("^chapter [\\divxlc]",
+                                       ignore_case = T)))) %>%
+           unnest_tokens(word, text)
+```
+
+
+# Incorporate Additional Sentiment {.tabset}
+
+## Alice in Wonderland Emotional Analysis
+
+1. load up the **lexicon** library
+2. I found the **nrc_emotions** lexicon interesting since it dealt with 8 simple emotions
+3. I thought it would be interesting to use those emotions from the lexicon as descriptors, so I had to leverage **pivot_longer** function to get them into one column for the **wordcloud** function.
+
+```{r}
+library(lexicon)
+
+alice_in_wonderland %>% inner_join(nrc_emotions, by = c("word" = "term")) %>%
+    select(-gutenberg_id, -linenumber,-chapter, -word) %>%
+    pivot_longer(cols = everything(), names_to = "word") %>%
+    filter(value != 0) %>%
+    select(word) %>% count(word) %>% 
+    with(wordcloud(word, n, colors = brewer.pal(8, "Dark2"))) 
+
+```
+
+## Moby Dick Emotional Analysis
+
+I wanted to then analyze a book that was intended for a more mature audience for comparison, my choice was **_Moby Dick_** since I feel it's a stark contrast to the much more playful **_Alice in Wonderland_**.
+
+```{r}
+
+moby_dick <- gutenberg_download(15) %>% mutate(linenumber = row_number(),
+           chapter = cumsum(str_detect(text, 
+                                       regex("^chapter [\\divxlc]",
+                                       ignore_case = T)))) %>%
+           unnest_tokens(word, text)
+
+moby_dick %>% inner_join(nrc_emotions, by = c("word" = "term")) %>%
+    select(-gutenberg_id, -linenumber,-chapter, -word) %>%
+    pivot_longer(cols = everything(), names_to = "word") %>%
+    filter(value != 0) %>%
+    select(word) %>% count(word) %>% 
+    with(wordcloud(word, n, colors = brewer.pal(8, "Dark2"))) 
+
+```
+
+
+# Conclusion
+
+It was fun to see that _Alice in Wonderland_, being a child's book, was slated as invoking emotions of anticipation, trust, and joy. _Moby Dick_ being a book intended for a more mature audience seemed to be high on anticipation, trust, fear, and sadness. I believe the emotion of anticipation was consistent in both books since in general authors will try to keep their audience engaged. I think emotions may be good predictors for classifying reading material.
