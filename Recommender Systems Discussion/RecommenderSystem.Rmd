@@ -1,0 +1,109 @@
+---
+title: "Netflix Recommender System"
+author: "Angel Claudio"
+date: "4/9/2020"
+output: rmdformats::readthedown
+css: custom.css
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+Netflix is one of the most popular if not the most popular app used for streaming films and television programs. 
+
+We will be taking a closer look at the company's recommender system. Our approach will be to use a **Scenario Design Analysis** as pictured below:
+
+![](https://raw.githubusercontent.com/AngelClaudio/DataSources/master/Picts/scenariodesignanalysis.png)
+
+Next, we will _reverse engineer_ their current approach using online sources as a background primer.
+
+Finally, we will see what recommendations we may want to implement to improve their current system.
+
+## Citation Credit
+
+1. [Medium Netflix Article](https://towardsdatascience.com/build-your-own-recommendation-engine-netflix-demystified-demo-code-550401d4885e)
+
+2. [Wikipedia Netflix](https://en.wikipedia.org/wiki/Netflix)
+
+3. [businessofapps.com Netflix Statistics](https://www.businessofapps.com/data/netflix-statistics/#1)
+
+4. [Civicscience Netflix Article](https://civicscience.com/new-netflix-nation/)
+
+5. [Fast Company Netflix Article](https://www.fastcompany.com/40547557/how-i-got-my-dream-job-of-getting-paid-to-watch-netflix)
+
+6. [Medium Netflix ML Article](https://uxplanet.org/netflix-binging-on-the-algorithm-a3a74a6c1f59)
+
+# Scenario Design Analysis
+
+## Who are their target users?
+
+Based on the demographics of Netflix users it seems the target population is any adult of legal age 18 and over. 
+
+In 2017 the ratio between male and female viewers was a very healthy split of **49:51** (female dominant). Netflix also has a pretty even distribution when it comes to it's viewership age, education, and income. Their global expansion in the past 5 years has a growth of around **20 million** subscribers annually.
+
+![Age](https://1z1euk35x7oy36s8we4dr6lo-wpengine.netdna-ssl.com/wp-content/uploads/2018/10/Netflix-by-age.png)
+
+![Education](https://1z1euk35x7oy36s8we4dr6lo-wpengine.netdna-ssl.com/wp-content/uploads/2018/10/Netflix-by-education.png)
+
+![Income](https://1z1euk35x7oy36s8we4dr6lo-wpengine.netdna-ssl.com/wp-content/uploads/2018/10/Netflix-users-earnings.png)
+
+We also have to keep in mind that Netflix has an international presence that amounts to over **167 million** users:
+
+![users](https://1z1euk35x7oy36s8we4dr6lo-wpengine.netdna-ssl.com/wp-content/uploads/2018/11/netflix-us-vs-international-users.jpeg)
+
+## What are their key goals?
+
+Broadly speaking, their key goal is to be everyone's main television and film streaming service. In terms of their recommender system, they definitely have earmarked goals. Reed Hastings, the chief executive of Netflix stated in 2019 that the way content was served up was in fact more important than the content itself. We begin to appreciate that focus when it's revealed that their algorithm is targeted to help you find something to watch within 90 seconds, the standard of which supposedly afterwards you're at risk of looking else where for your entertainment fix.
+
+## How can you help them accomplish those goals?
+
+I believe people initially were attracted to Netflix based on the value proposition. It's clear however, that this isn't the case anymore, as now with many other streaming competitors on the playing field they do not offer the cheapest option. With their success Netflix has evolved in to a new playing field where their success is much more dependent on a complex layering of social media, how effective their recommender system performs, and content availability.
+
+We can see statistically that 37% of surveyors say they subscribe to a video streaming service to watch a _hyped_  show:
+
+![](https://1z1euk35x7oy36s8we4dr6lo-wpengine.netdna-ssl.com/wp-content/uploads/2018/11/netflix-why-subscribe-more-services.jpg)
+
+Since the focus of this analysis is their recommender system, they should have their algorithm closely connected to meta-tagging to find relationships and commonality among similar peer patterns to find success. We will "reverse engineer" their recommender system and make some inferences on what they're ultimately doing to recommend content. If there are any specific recommendations we could make to further improve what they seemingly already have in place, we will explore those options as well.
+
+# Reverse Engineer
+
+Netflix recently abandoned their star ratings in favor of the thumbs up and thumbs down rating in 2017. The binary approach was implemented in hopes of ensuring a closer percentage match by their algorithms:
+
+![Netflix Percentage Match System](https://imagesvc.meredithcorp.io/v3/mm/image?url=https%3A%2F%2Fimages.hellogiggles.com%2Fuploads%2F2017%2F04%2F05052409%2Fratings.jpg)
+
+I was surprised to learn that the metadata for their content was created by their own dedicated team of 30 "taggers". Usually we see tags come from content consumers or content providers, but Netflix being the giant they are invested in ensuring they handled the meta-tagging completely in house. Their taggers spend roughly about 20 hours a week viewing Netflix content, and come up with array of metadata that helps to successfully identify many of the attributes (thousands) for each work of media. The following is an example of the meta-tags that were created for Iron Man 3:
+
+![Iron Man 3](https://miro.medium.com/max/1400/1*sSoz8QJogN4T1M8x7P3LXw.png)
+
+The next step is based on viewing history, using the collaborative strength of the tags and personal ratings, Netflix predicts your "taste group". Although undisclosed, they probably use a nearest neighbor algorithm such as Cosine Similarity and a random forest to classify your next top viewing choices. 
+
+What is really innovative in all this is not only do they have a machine learning engine recommending your next watch, but they also have an engine predicting what thumbnail for each content is best suited to lure your interest. According to their research thumbnails reportedly commands 82% of a viewer’s attention for the 1.8 seconds a title is reviewed. In the image below we see that for the second season of their original show "Unbreakable Kimmy Schmidt", there are many images that may convey different emotions a consumer may lean towards, the bottom winner was the one that appealed to most viewers:
+
+![Winner of Kimmy Schmidt Thumbnail Artwork](https://miro.medium.com/max/1276/1*I642-wD0wpxh8so2fbrTkQ.png)
+
+Beyond the tone of a thumbnail Netflix goes further to recommend a thumbnail based on the actual content it is displaying. For example, do you watch George Clooney movies because you are a fan of George Clooney? If so the thumbnail should probably have him front and center. The following are examples using John Travolta and Uma Thurman as the source of inspiration for a potential consumer that has watched movies they were previously in:
+
+![Thumbnails of Uma Thurman and John Travolta](https://miro.medium.com/max/1280/1*4dBDBa5-2G0Duy7e9OG-Yw.png)
+
+Of course Netflix doesn't abandon the more basic recommendation systems such as trending popular movies and collaborative filtering, lists of sorts based on similarities like genre and themes. When you put the results of all these recommender systems together Netflix opts to show you them using carousel rows sorted from most likely watch to less likely:
+
+![Netflix Row Layout](https://miro.medium.com/max/1196/1*_41E4QM0__sCKBIsD9b_iQ.png)
+
+# Conclusion and Specific Recommendations
+
+Honestly I was impressed quite a few times during this research. I remembered a while ago I thought the 5 star approach was a terrible idea. For example, you could rate something one star or five star all the time while I may evaluate more carefully 2 or 3 stars to indicate I kind of like or dislike a particular movie or show, how does Netflix normalize the differences accurately? Then come to find out they took that into consideration and upgraded their approach to a binary thumbs up thumbs down approach, that's very progressive.
+
+I think Netflix is very conscious of the quality of their data, which would explain why they have their own expert team of "taggers". They understand that data while varied should have consistencies in order to derive answers from. This is not the first company I've seen a make predictions using images, as Airbnb also has a prediction model for furniture based on the geometric proportions in images:
+
+![Airbnb Furniture Predictor](https://miro.medium.com/proxy/1*hT1TKQnnw-IoZGEj8Z_5og.png)
+
+However, I do find Netflix's use of image prediction innovative, trying to find the best image that will inspire you on a multitude of levels is quite serious - but I guess this is becoming of a company of their size, understanding the gist of it just lends it's self to our appreciation.
+
+It's hard to find the nerve to recommend something to such an advanced company especially with the resources they have, one can't help believe that whatever your thinking they have already implemented in some way or have carefully assessed it's not worth it and opted for something better.
+
+I have always thought that leveraging a temporal database to discern users on an account would be a cool innovation. Netflix has profiles in my opinion to ease the burden on their recommender system, for example if you just had one profile, how does Netflix distinguish what every family member or friend wants to see without having a whole mess of recommendations? How do they predict who's even on? Profiles should be the solution, but I don't think it always arises to the occasion. For example, a couple might share the same account and not bother creating different profiles. They may spend 50 percent of their time watching shows together, but the other time they may spend it on watching their particular taste in movies and shows. I think it would be great if Netflix could create recommendations proportionate to viewing times and patterns of the profile. For example, Netflix should predict that perhaps for a given profile there are times a certain individual or individual(s) may be on, and discern recommendations based on their temporal history (hell throw in device in use and location as well). This solution is probably not worth the cost benefit analysis since that is costly data to obtain, but just a thought to the age old reaction of "why is that on my list, oh wait it's because..".
+
+Perhaps in the future when big data of all sorts become more and more trivial recommendations like mine may become more feasible.
