@@ -1,0 +1,234 @@
+---
+title: "Credit Card Fraud Detection Using Neural Nets"
+author: "Angel Claudio"
+date: "5/2020"
+output: rmdformats::readthedown
+css: custom.css
+---
+
+```{r setup, echo=F, message=F, warning=F}
+knitr::opts_chunk$set(echo = TRUE)
+library(keras)
+library(caret)
+library(neuralnet)
+library(tidyverse)
+library(jsonlite)
+library(tidyverse)
+library(caTools)
+```
+
+
+
+# Abstract
+
+This research paper is to explore the functionality of neural nets by applying its functionality to Credit Card Fraud Detection. Using data of continuous values that depict the attributes of credit card pictures, we will train two different neural net models to predict which credit cards are fraudulent. 
+
+## Challenges
+
+In this project there were a few challenges:
+
+1. The data is massive, about 149 MB large, 284,807 observations of 31 variables 
+
+2. The data is imbalanced, the fraudulent records only make up for 0.172% of all transactions.
+
+3. The **neuralnet** library is easier to use then the **keras** package. Although there are a lot of helpful tutorials of **keras** out there, just understanding its use can be daunting at first.
+
+
+# Data Wrangling
+
+## Import the Data
+
+### Data Sources
+
+The data source was initially sampled to a smaller size and hosted on GitHub as shown below.
+
+
+
+```{r import-data, echo=T}
+url = 'https://raw.githubusercontent.com/AngelClaudio/data-sources/master/csv/cc_fraud.csv'
+
+creditcard <- read.csv(url, stringsAsFactors=FALSE)  # ensure no factors
+
+creditcard$Class <- gsub('\'', '', creditcard$Class) # remove ticks from class
+creditcard$Class <- strtoi(creditcard$Class)         # turn character to int
+
+str(creditcard)
+```
+
+ 
+
+Using the **str** (short for structure) function, we review the data features. The data below is broken down as follows:
+
+1. The Time column displays how long in seconds had elapsed from this transaction and the first transaction
+
+2. Columns V1 - V28 are PCA Dimensional reduction values used to describe qualities of the CC while protecting the users' identities
+
+3. The Amount column is the transaction amount
+
+4. The Class column displays 1 for fraudulent transactions and 0 for valid transactions
+
+
+## Data Prep
+
+Using the **createDataPartition** function from **caret**, we will sample our data into test and training sets:
+
+1. Take a 70% sample by setting the **p** argument (for percentage) to .7, set the **list** argument to false so we get a matrix instead, and set the **y** value to determine the classification on which to hold the integrity of the sampling to.
+
+2. Assign the training data to the training variable by sub-setting based on the index
+
+3. Assign the testing data to the testing variable by anitjoining the index using a negative sign in the subset
+
+```{r r-split-data}
+index <- createDataPartition(y = creditcard$Class, p=  0.7, list = F)
+creditcard.training <- creditcard[index,]
+creditcard.test <- creditcard[-index,]
+```
+
+# Neural Nets Using BP (back propagation)
+
+## Model Training
+
+Below we will be Using the **neuralnet** package. The following are the steps we begin with to model the data:
+
+1. Normalize all independent variables using the **scale** function to ensure the mins and maxes don't interfere with the performance of the neural net model.
+
+2. Since this is a classification, we set the **linear.output** argument to false. For the **hidden** level we want to set the number of neurons to 5 with 3 layers (mostly arbitrary on my part based on recommended settings)
+
+3. Lastly, in the formula we let the model know our outcome feature is Class and to use the rest of the features as predictors
+
+```{r nn-train-model, message = F, warning = F}
+creditcart.training.two <- creditcard.training %>% mutate_at(c(1:30), funs(c(scale(.))))
+
+nn_model <- neuralnet(Class ~ ., data = creditcart.training.two, hidden = c(5,3), linear.output = F)
+```
+
+To show the plot in this presentation we must set the **rep** argument to **best** in order to show the iteration with the smallest error, if not by default it will show in a separate window.
+
+We can see below the black lines representing the connections between each layer the weights outputted to each connection. The blue line display the bias created for the model, which acts as a sort of intercept for the model.
+
+```{r nn-plot-model, message = F, warning = F}
+plot(nn_model, rep ="best")
+```
+
+## Model Testing
+
+Now that our model has been trained we scale the test data and begin predictions:
+
+1. Use the **compute** function of the **neuralnet** library, we ensure to make an explicit reference using the double colon since **::** since **dplyr** shares the same named function
+
+```{r nn-test-model}
+creditcart.test.two <- creditcard.test %>% mutate_at(c(1:30), funs(c(scale(.))))
+
+predicted.nn.values <- neuralnet::compute(nn_model, creditcart.test.two)
+```
+
+2. After **compute** finishes its predictions, we use **sapply** to leverage the **round** function over the results, since neural nets predictions are in percentages
+
+Below you can see what the results look before rounding:
+
+```{r nn-test-model-show-results}
+head(predicted.nn.values$net.result)
+
+```
+
+After the rounding the data appears as follows:
+
+```{r nn-test-model-show-rounds}
+predictions <- sapply(predicted.nn.values$net, round)
+head(predictions)
+```
+
+3. Finally, we create a **table** with the predictions and the original test data to show a confusion matrix of the results. We can see the results in the main diagonal (from top left to bottom right) representing our correct True Positives and True Negatives, While the opposing diagonal (from top right to bottom left) represents our errors for False Positives and False Negatives
+
+```{r nn-test-model-confusion-matrix}
+# predictions is a matrix, so subset first column only
+nn_results <- round(predicted.nn.values$net[,1], 0)
+#confusion_matrix_results <- table(nn_results, creditcart.test.two$Class)
+
+
+table(factor(nn_results,
+             levels=min(creditcard.test$Class):max(creditcard.test$Class)),
+      factor(creditcard.test$Class,
+             levels=min(creditcard.test$Class):max(creditcard.test$Class)))
+```
+
+
+# Keras Neural Net Model (Rectified Linear Unit)
+
+We decided to add the popular **keras** library to the research to see how well it performed. The popular package runs on top of tensor flow, one of the goals being that you only need to pass a graph object since it is language independent, and hence decoupled from your choice of platform modeling. Although it has many options to tinker with, sometimes that complexity can be counter productive if you make one mistake in the configuration. 
+
+## Model Training
+
+For the training models we use our previous prepared training data sets and transform them using the **as.matrix** function:
+
+```{r keras-training, eval = T, echo=T}
+X_train <- creditcard.training %>% select(-Class) %>% scale()
+y_train <- to_categorical(creditcard.training$Class) 
+
+X_test <- creditcard.test %>% select(-Class) %>% scale()
+y_test <- to_categorical(creditcard.test$Class)
+```
+
+
+For the actual model we have to set some configurations before the actual training:
+
+1. The **activation** argument defines the algorithm for the neuron outputs of that neuron given a set of inputs. 
+
+2. The **relu** value we set for the **activation** arguments stands for Rectified Linear Unit. The algorithm transforms inputs to zero or the input itself. If the number is greater than 0, it will just output the given value. If the number is less than or equal to zero, it will transform the number to zero. The idea being that the more positive the value, the more activated the neuron will be.
+
+```{r keras-modeling, eval = T, echo=T}
+model <- keras_model_sequential() 
+
+model %>% 
+  layer_dense(units = 256, activation = 'relu', input_shape = ncol(X_train)) %>% 
+  layer_dropout(rate = 0.4) %>% 
+  layer_dense(units = 128, activation = 'relu') %>%
+  layer_dropout(rate = 0.3) %>%
+  layer_dense(units = 2, activation = 'sigmoid')
+```
+
+We set the **epochs** argument to how many full pass overs we want to make through the nodes of the network using all of the training data. That value was conservative due to the size of the data and machine power. The validation split used per training was set to .2 (largely since validation size usually matches training set in the industry):
+
+```{r keras-model-launch, eval = T, echo=T}
+history <- model %>% compile(loss = 'binary_crossentropy', optimizer = 'adam',
+  metrics = c('accuracy'))
+
+model %>% fit(X_train, y_train, epochs = 2, batch_size = 5, 
+              validation_split = 0.2)
+```
+
+
+Below the model has been established, we can see the dense layers and the model's output shape.
+
+```{r keras-summary, eval = T, echo=T}
+summary(model)
+```
+
+## Keras Model Testing
+
+We pass the testing data set for the model to predict using the function **predict_classes** of Keras:
+
+```{r keras-prediction, eval = T, echo=T}
+predictions <- model %>% predict_classes(X_test)
+```
+
+Below we create a confusion matrix for the Keras predictions using the **table** function, therefore we cast the dependent variable as a factor using the **factor** function, setting the **levels** argument to our two labels of fraudulent or non-fraudulent.
+
+```{r keras-confusion-matrix}
+table(factor(predictions,
+             levels=min(creditcard.test$Class):max(creditcard.test$Class)),
+      factor(creditcard.test$Class,
+             levels=min(creditcard.test$Class):max(creditcard.test$Class)))
+```
+
+# Conclusion
+
+We can see from the confusion matrix for both neural net models are very accurate for predicting non-fraudulent transactions, on average having only an error rate around .02%. Test runs also showed a viable accuracy rate for predicting fraudulent transactions, on average having an error rate around 20%. 
+
+Most fraudulent detection systems use models that are only accurate 60-70% of the time for flagging a transaction as fraudulent, an acceptable risk of alerting to avoid the cost of an actual crime of identity theft.
+
+In conclusion there is a lot of potential to use Neural Net models as shown by this research, the only caveat being the understanding on how to best use the models and for what solutions.
+
+
+
+
